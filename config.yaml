@@ -1,7 +1,7 @@
 # System Configuration
 driver:
   host: "localhost"
-  port: 5000
+  port: 5001
 
 # MapReduce Configuration
 mapreduce:
@@ -10,9 +10,9 @@ mapreduce:
 
 # File System Configuration
 directories:
-  input: "../inputs"
-  intermediate: "../intermediate"
-  output: "../out"
+  input: "../files/inputs"
+  intermediate: "../files/intermediate"
+  output: "../files/out"
 
 # Task Configuration
 task_settings:

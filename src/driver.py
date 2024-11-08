@@ -1,5 +1,3 @@
-import time
-
 import requests
 from flask import Flask, request, jsonify
 import os
@@ -7,10 +5,6 @@ import threading
 import yaml
 from typing import List, Dict, Union
 import shutil
-import nltk
-
-# Make sure to download the necessary NLTK resources
-nltk.download('punkt')
 
 # Declare Flask app
 app = Flask(__name__)
@@ -21,12 +15,6 @@ def load_config():
         return yaml.safe_load(file)
 
 config = load_config()
-
-# Initialize configuration
-# N = config['mapreduce']['num_map_tasks']
-# M = config['mapreduce']['num_reduce_tasks']
-PORT = config['driver']['port']
-# INPUT_DIR = config['directories']['input']
 
 
 def delete_and_create_folder(folder_path):
@@ -39,6 +27,7 @@ def delete_and_create_folder(folder_path):
     # Create a new folder
     os.makedirs(folder_path)
     print(f"Created folder: {folder_path}")
+
 
 def group_number_indexes(nums: list, k: int):
     # Sort the numbers in descending order while keeping track of their original indexes
@@ -80,7 +69,8 @@ class TaskManager:
         input_files = [f for f in os.listdir(self.INPUT_DIR) if f.endswith('.txt')]
         self.N = min(self.N, len(input_files))
         # total_files = len(input_files)
-        file_sizes = [os.path.getsize(self.INPUT_DIR + '/' + f)  for f in os.listdir(self.INPUT_DIR) if f.endswith('.txt')]
+        file_sizes = [os.path.getsize(self.INPUT_DIR + '/' + f) for f in os.listdir(self.INPUT_DIR) if
+                      f.endswith('.txt')]
 
         # Distribute files among N map tasks
         file_groups = group_number_indexes(file_sizes, self.N)
@@ -127,13 +117,14 @@ class TaskManager:
                 if task_id not in self.completed_reduce_tasks:
                     self.completed_reduce_tasks[task_id] = True
 
-    #def is_all_map_tasks_completed(self) -> bool:
+    # def is_all_map_tasks_completed(self) -> bool:
     #    return self.completed_map_tasks == self.N
     def is_task_started(self, task_type: str, task_id: int) -> bool:
         if task_type == 'map':
             return any(task['task_id'] == task_id for task in self.map_tasks) or task_id in self.completed_map_tasks
         elif task_type == 'reduce':
-            return any(task['task_id'] == task_id for task in self.reduce_tasks) or task_id in self.completed_reduce_tasks
+            return any(
+                task['task_id'] == task_id for task in self.reduce_tasks) or task_id in self.completed_reduce_tasks
         return False
 
     def is_all_completed(self) -> bool:
@@ -155,7 +146,7 @@ def get_task():
         if task_manager.completed_map_tasks and len(task_manager.completed_map_tasks) < task_manager.N:
             return jsonify({'status': 'wait', 'message': 'All map tasks started, please wait.'}), 202
         return jsonify({'task': None}), 204
-    #else:
+    # else:
     #    return jsonify({'task': None})
 
 
@@ -166,7 +157,7 @@ def task_completed():
     task_id = data['task_id']
 
     # Verify if the task was started
-    #if not task_manager.is_task_started(task_type, task_id):
+    # if not task_manager.is_task_started(task_type, task_id):
     #    return jsonify({'status': 'error', 'message': 'Task not started or invalid task_id'}), 400
 
     task_manager.complete_task(task_type, task_id)
@@ -181,9 +172,10 @@ def status():
         'all_completed': task_manager.is_all_completed()
     })
 
+
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
-    print("Shutting down the server.")
+    print("Driver: Shutting down the server.")
     func = request.environ.get('werkzeug.server.shutdown')
     if func is not None:
         func()
@@ -194,7 +186,7 @@ def monitor_tasks():
     while True:
         if task_manager.is_all_completed():
             # Make a request to the shutdown route
-            requests.post(f'http://127.0.0.1:{PORT}/shutdown')
+            requests.post(f'http://127.0.0.1:{config['driver']['port']}/shutdown')
             break
 
 
@@ -209,5 +201,4 @@ if __name__ == '__main__':
     # Start a background thread to monitor task completion
     threading.Thread(target=monitor_tasks, daemon=True).start()
 
-    app.run(port=PORT)
-
+    app.run(port=config['driver']['port'])

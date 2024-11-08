@@ -1,21 +1,20 @@
 import re
 import string
 import sys
-
 import requests
 import os
 from collections import Counter
 import yaml
 import time
+
 import nltk
 from nltk import word_tokenize
-nltk.download('punkt')
-nltk.download('punkt_tab')
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
 
 def load_config():
     with open('../config.yaml', 'r') as file:
         return yaml.safe_load(file)
-
 
 config = load_config()
 
@@ -108,18 +107,7 @@ def process_task(task):
         return reduce_task(task)
 
 
-def main():
-    #retries = 5  # Number of retries before stopping
-    #wait_time = 2  # Time to wait before retrying
-    # Get command-line arguments
-    args = sys.argv[1:]  # Exclude the script name
-    worker_id=0
-    try:
-        worker_id = int(args[0])
-    except:
-        print('usage: python worker.py id')
-        exit(0)
-
+def run_worker(worker_id: int):
     while True:
         try:
             #for attempt in range(retries):
@@ -142,6 +130,7 @@ def main():
                     f'http://{HOST}:{PORT}/task_completed',
                     json=completion_info
                 )
+                print(f"Worker {worker_id}: Completed {task['type']} task {task['task_id']}")
             elif response.status_code == 202:
                 print(
                     f"Worker {worker_id}: received wait signal. Waiting for {RETRY_DELAY} seconds...")
@@ -152,10 +141,19 @@ def main():
                 break  # Exit if there's an unexpected error
 
         except requests.RequestException as e:
-            print(f"Worker {worker_id}: Error communicating with driver: {e}")
+            print(f"Worker {worker_id}: Error communicating with driver: Disconnecting")
             time.sleep(RETRY_DELAY)
             break
 
 
 if __name__ == '__main__':
-    main()
+    # Get command-line arguments
+    args = sys.argv[1:]  # Exclude the script name
+    worker_id=0
+    try:
+        worker_id = int(args[0])
+    except:
+        print('usage: python worker.py id')
+        exit(0)
+
+    run_worker(worker_id)
