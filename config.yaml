@@ -1,0 +1,20 @@
+# System Configuration
+driver:
+  host: "localhost"
+  port: 5000
+
+# MapReduce Configuration
+mapreduce:
+  num_map_tasks: 6    # N
+  num_reduce_tasks: 4  # M
+
+# File System Configuration
+directories:
+  input: "../inputs"
+  intermediate: "../intermediate"
+  output: "../out"
+
+# Task Configuration
+task_settings:
+  retry_attempts: 3
+  retry_delay: 5  # seconds
