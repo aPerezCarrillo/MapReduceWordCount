@@ -12,7 +12,13 @@ from nltk import word_tokenize
 nltk.download('punkt', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
-def load_config():
+def load_config() -> dict:
+    """
+    Load the configuration from the YAML file.
+
+    Returns:
+        dict: The configuration settings loaded from the YAML file.
+    """
     with open('../config.yaml', 'r') as file:
         return yaml.safe_load(file)
 
@@ -28,8 +34,16 @@ RETRY_ATTEMPTS = config['task_settings']['retry_attempts']
 RETRY_DELAY = config['task_settings']['retry_delay']
 M = config['mapreduce']['num_reduce_tasks']
 
+def separate_words(text: str) -> list[str]:
+    """
+    Tokenize the input text into words, removing punctuation and converting to lowercase.
 
-def separate_words(text):
+    Args:
+        text (str): The input text to be tokenized.
+
+    Returns:
+        List[str]: A list of cleaned and lowercased words.
+    """
     # Tokenize the text into words
     words = word_tokenize(text)
     # Remove punctuation from each word
@@ -38,16 +52,24 @@ def separate_words(text):
     cleaned_words = [word.lower() for word in cleaned_words if word]
     return cleaned_words
 
-def map_task(task):
+def map_task(task: dict) -> dict:
+    """
+    Process a map task by reading assigned files and writing words to intermediate files.
+
+    Args:
+        task (dict): The task containing the task_id and files to process.
+
+    Returns:
+        dict: A dictionary indicating the completion of the map task.
+    """
     task_id = task['task_id']
-    # num_reduce_tasks = task['num_reduce_tasks']
 
     # Process each assigned file
     for filename in task['files']:
         file_path = os.path.join(INPUT_DIR, filename)
         with open(file_path, 'r') as f:
             for line in f:
-                words = separate_words(line) # line.strip().split()
+                words = separate_words(line)
                 for word in words:
                     if word:  # Skip empty words
                         # Determine which reduce task should handle this word
@@ -59,7 +81,16 @@ def map_task(task):
 
     return {'type': 'map', 'task_id': task_id}
 
-def get_reduce_task_filenames(intermediate_dir):
+def get_reduce_task_filenames(intermediate_dir: str) -> dict:
+    """
+    Retrieve filenames associated with reduce tasks from the intermediate directory.
+
+    Args:
+        intermediate_dir (str): The path to the intermediate directory.
+
+    Returns:
+        dict: A dictionary mapping reduce task IDs to their corresponding filenames.
+    """
     reduce_task_dict = {}  # Dictionary to hold reduce_task_id and associated filenames
     pattern = re.compile(r'mr-\d+-(\d+)')  # Regex pattern to match reduce_task_id
 
@@ -76,9 +107,17 @@ def get_reduce_task_filenames(intermediate_dir):
 
     return reduce_task_dict
 
-def reduce_task(task):
+def reduce_task(task: dict) -> dict:
+    """
+    Process a reduce task by aggregating word counts from intermediate files.
+
+    Args:
+        task (dict): The task containing the task_id to process.
+
+    Returns:
+        dict: A dictionary indicating the completion of the reduce task.
+    """
     reduce_task_id = task['task_id']
-    # num_map_tasks = task['num_map_tasks']
 
     word_count = Counter()
     reduce_tasks_dict = get_reduce_task_filenames(INTERMEDIATE_DIR)
@@ -99,18 +138,30 @@ def reduce_task(task):
 
     return {'type': 'reduce', 'task_id': reduce_task_id}
 
+def process_task(task: dict) -> dict:
+    """
+    Process a task based on its type (map or reduce).
 
-def process_task(task):
+    Args:
+        task (dict): The task to be processed.
+
+    Returns:
+        dict: The result of processing the task.
+    """
     if task['type'] == 'map':
         return map_task(task)
     else:  # reduce
         return reduce_task(task)
 
+def run_worker(worker_id: int) -> None:
+    """
+    Continuously request and process tasks from the driver until no tasks are available.
 
-def run_worker(worker_id: int):
+    Args:
+        worker_id (int): The ID of the worker for logging purposes.
+    """
     while True:
         try:
-            #for attempt in range(retries):
             response = requests.get(f'http://{HOST}:{PORT}/get_task')
             task_data = response.json()
 
@@ -145,11 +196,10 @@ def run_worker(worker_id: int):
             time.sleep(RETRY_DELAY)
             break
 
-
 if __name__ == '__main__':
     # Get command-line arguments
     args = sys.argv[1:]  # Exclude the script name
-    worker_id=0
+    worker_id = 0
     try:
         worker_id = int(args[0])
     except:
