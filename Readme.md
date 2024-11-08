@@ -47,44 +47,5 @@ It consists of a launcher script, a driver script, and a worker script. The laun
    ``` 
 
 ## Program Flow: 
-```mermaid
-graph TD;
-    A[Flask Server
-(Driver Endpoint)] -->|1. Create Tasks
-(4 Map Tasks, 2 Reduce Tasks)| B[Task Manager
-(Driver Logic)];
-    B -->|2. Assign Map Tasks
-(Task 0, Task 1, Task 2, Task 3)| C[Worker 1
-(Map Task Logic)];
-    B -->|2. Assign Map Tasks
-(Task 0, Task 1, Task 2, Task 3)| D[Worker 2
-(Map Task Logic)];
-    
-    C -->|3. Process Input Files
-(Tokenization, Word Count)| E[Intermediate Files
-(e.g., mr-0-0, mr-0-1, mr-0-2, mr-0-3)];
-    D -->|3. Process Input Files
-(Tokenization, Word Count)| F[Intermediate Files
-(e.g., mr-1-0, mr-1-1, mr-1-2, mr-1-3)];
-    
-    E -->|4. Notify Completion| A;
-    F -->|4. Notify Completion| A;
-    
-    A -->|5. Assign Reduce Tasks
-(Task 0, Task 1)| G[Worker 1
-(Reduce Task Logic)];
-    A -->|5. Assign Reduce Tasks
-(Task 0, Task 1)| H[Worker 2
-(Reduce Task Logic)];
-    
-    G -->|6. Read Intermediate Files
-(Aggregate Word Counts)| I[Final Output
-(e.g., out-0)];
-    H -->|6. Read Intermediate Files
-(Aggregate Word Counts)| J[Final Output
-(e.g., out-1)];
-    
-    I -->|7. Notify Completion| A;
-    J -->|7. Notify Completion| A;
-```
+![Here Diagram with the REST API calls between Driver and Worker](flow_diagram.png "Flow Diagram")
 
